@@ -1,4 +1,6 @@
-;(function($){
+/*jshint eqeqeq:false */
+/*global jQuery */
+(function($){
 /**
  * jqGrid extension for SubGrid Data
  * Tony Tomov tony@trirand.com
@@ -11,7 +13,7 @@
 $.jgrid.extend({
 setSubGrid : function () {
 	return this.each(function (){
-		var $t = this, cm,
+		var $t = this, cm, i,
 		suboptions = {
 			plusicon : "ui-icon-plus",
 			minusicon : "ui-icon-minus",
@@ -23,11 +25,11 @@ setSubGrid : function () {
 		};
 		$t.p.subGridOptions = $.extend(suboptions, $t.p.subGridOptions || {});
 		$t.p.colNames.unshift("");
-		$t.p.colModel.unshift({name:'subgrid',width: $.browser.safari ?  $t.p.subGridWidth+$t.p.cellLayout : $t.p.subGridWidth,sortable: false,resizable:false,hidedlg:true,search:false,fixed:true});
+		$t.p.colModel.unshift({name:'subgrid',width: $.jgrid.cell_width ?  $t.p.subGridWidth+$t.p.cellLayout : $t.p.subGridWidth,sortable: false,resizable:false,hidedlg:true,search:false,fixed:true});
 		cm = $t.p.subGridModel;
 		if(cm[0]) {
 			cm[0].align = $.extend([],cm[0].align || []);
-			for(var i=0;i<cm[0].name.length;i++) { cm[0].align[i] = cm[0].align[i] || 'left';}
+			for(i=0;i<cm[0].name.length;i++) { cm[0].align[i] = cm[0].align[i] || 'left';}
 		}
 	});
 },
@@ -38,7 +40,7 @@ addSubGridCell :function (pos,iRow) {
 		sid= this.p.id;
 		ic = this.p.subGridOptions.plusicon;
 	});
-	return "<td role=\"gridcell\" aria-describedby=\""+sid+"_subgrid\" class=\"ui-sgcollapsed sgcollapsed\" "+prp+"><a href='javascript:void(0);'><span class='ui-icon "+ic+"'></span></a></td>";
+	return "<td role=\"gridcell\" aria-describedby=\""+sid+"_subgrid\" class=\"ui-sgcollapsed sgcollapsed\" "+prp+"><a style='cursor:pointer;'><span class='ui-icon "+ic+"'></span></a></td>";
 },
 addSubGrid : function( pos, sind ) {
 	return this.each(function(){
@@ -81,13 +83,13 @@ addSubGrid : function( pos, sind ) {
 				});
 			}
 			var pID = $("table:first",ts.grid.bDiv).attr("id")+"_";
-			$("#"+pID+sbid).append(dummy);
+			$("#"+$.jgrid.jqID(pID+sbid)).append(dummy);
 			ts.grid.hDiv.loading = false;
-			$("#load_"+ts.p.id).hide();
+			$("#load_"+$.jgrid.jqID(ts.p.id)).hide();
 			return false;
 		};
 		var subGridJson = function(sjxml, sbid){
-			var tddiv,result , i,cur, sgmap,j,
+			var tddiv,result,i,cur, sgmap,j,
 			dummy = $("<table cellspacing='0' cellpadding='0' border='0'><tbody></tbody></table>"),
 			trdiv = $("<tr></tr>");
 			for (i = 0; i<ts.p.subGridModel[0].name.length; i++) {
@@ -99,8 +101,8 @@ addSubGrid : function( pos, sind ) {
 			$(dummy).append(trdiv);
 			if (sjxml){
 				sgmap = ts.p.jsonReader.subgrid;
-				result = sjxml[sgmap.root];
-				if ( typeof result !== 'undefined' ) {
+				result = $.jgrid.getAccessor(sjxml, sgmap.root);
+				if ( result !== undefined ) {
 					for (i=0;i<result.length;i++) {
 						cur = result[i];
 						trdiv = $("<tr class='ui-widget-content ui-subtblcell'></tr>");
@@ -122,9 +124,9 @@ addSubGrid : function( pos, sind ) {
 				}
 			}
 			var pID = $("table:first",ts.grid.bDiv).attr("id")+"_";
-			$("#"+pID+sbid).append(dummy);
+			$("#"+$.jgrid.jqID(pID+sbid)).append(dummy);
 			ts.grid.hDiv.loading = false;
-			$("#load_"+ts.p.id).hide();
+			$("#load_"+$.jgrid.jqID(ts.p.id)).hide();
 			return false;
 		};
 		var populatesubgrid = function( rd )
@@ -145,7 +147,7 @@ addSubGrid : function( pos, sind ) {
 			}
 			if(!ts.grid.hDiv.loading) {
 				ts.grid.hDiv.loading = true;
-				$("#load_"+ts.p.id).show();
+				$("#load_"+$.jgrid.jqID(ts.p.id)).show();
 				if(!ts.p.subgridtype) { ts.p.subgridtype = ts.p.datatype; }
 				if($.isFunction(ts.p.subgridtype)) {
 					ts.p.subgridtype.call(ts, dp);
@@ -175,7 +177,7 @@ addSubGrid : function( pos, sind ) {
 			return false;
 		};
 		var _id, pID,atd, nhc=0, bfsc, r;
-		$.each(ts.p.colModel,function(i,v){
+		$.each(ts.p.colModel,function(){
 			if(this.hidden === true || this.name === 'rn' || this.name === 'cb') {
 				nhc++;
 			}
@@ -211,7 +213,7 @@ addSubGrid : function( pos, sind ) {
 						} else {
 							$(r).show();
 						}
-						$(this).html("<a href='javascript:void(0);'><span class='ui-icon "+ts.p.subGridOptions.minusicon+"'></span></a>").removeClass("sgcollapsed").addClass("sgexpanded");
+						$(this).html("<a style='cursor:pointer;'><span class='ui-icon "+ts.p.subGridOptions.minusicon+"'></span></a>").removeClass("sgcollapsed").addClass("sgexpanded");
 						if(ts.p.subGridOptions.selectOnExpand) {
 							$(ts).jqGrid('setSelection',_id);
 						}
@@ -228,15 +230,17 @@ addSubGrid : function( pos, sind ) {
 						} else if($(r).hasClass('ui-subgrid')) { // incase of dynamic deleting
 							$(r).hide();
 						}
-						$(this).html("<a href='javascript:void(0);'><span class='ui-icon "+ts.p.subGridOptions.plusicon+"'></span></a>").removeClass("sgexpanded").addClass("sgcollapsed");
+						$(this).html("<a style='cursor:pointer;'><span class='ui-icon "+ts.p.subGridOptions.plusicon+"'></span></a>").removeClass("sgexpanded").addClass("sgcollapsed");
 					}
 					return false;
 				});
 			}
-			if(ts.p.subGridOptions.expandOnLoad === true) {
-				$(ts.rows[i].cells[pos]).trigger('click');
-				}
 			i++;
+		}
+		if(ts.p.subGridOptions.expandOnLoad === true) {
+			$(ts.rows).filter('.jqgrow').each(function(index,row){
+				$(row.cells[0]).click();
+			});
 		}
 		ts.subGridXml = function(xml,sid) {subGridXml(xml,sid);};
 		ts.subGridJson = function(json,sid) {subGridJson(json,sid);};
